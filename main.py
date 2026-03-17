@@ -2,117 +2,153 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.client.default import DefaultBotProperties
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ParseMode
 
-# Твій токен
-API_TOKEN = '8664981128:AAHT_yb1NU_fPiyZseD84TGDhrPUNWfR5n0' 
+API_TOKEN = '8664981128:AAHT_yb1NU_fPiyZsedD84TGDhrPUNWfR5n0'
+ADMIN_ID = 6887494552  # встав свій Telegram ID
 
-# Налаштування логів (важливо для сервера)
 logging.basicConfig(level=logging.INFO)
 
-# Ініціалізація бота з підтримкою Markdown за замовчуванням
-bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# --- КЛАВІАТУРИ ---
+# ---------- ГОЛОВНЕ МЕНЮ ----------
+def get_main_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🏨 Номери", callback_data="view_rooms")],
+        [InlineKeyboardButton(text="📷 Галерея", callback_data="gallery")],
+        [InlineKeyboardButton(text="💰 Ціни", callback_data="prices")],
+        [InlineKeyboardButton(text="📅 Забронювати", callback_data="booking")],
+        [InlineKeyboardButton(text="📞 Контакти", callback_data="contacts")]
+    ])
 
-main_kb = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text="🏨 Переглянути номери")],
-    [KeyboardButton(text="📅 Забронювати відпочинок")],
-    [KeyboardButton(text="📜 Прайс"), KeyboardButton(text="📍 Локація")]
-], resize_keyboard=True, input_field_placeholder="Оберіть пункт меню...")
+# ---------- МЕНЮ НОМЕРІВ ----------
+def get_rooms_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💎 Люкс", callback_data="room_lux")],
+        [InlineKeyboardButton(text="🛏 Стандарт", callback_data="room_std")],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data="main_menu")]
+    ])
 
-rooms_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🌲 Comfort Suite", callback_data="r1")],
-    [InlineKeyboardButton(text="⛰ Forest View", callback_data="r2")],
-    [InlineKeyboardButton(text="👑 Presidential Loft", callback_data="r3")]
-])
-
-# --- ОБРОБНИКИ ---
-
+# ---------- START ----------
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message):
-    welcome_text = (
-        "✨ *Вітаємо у Forrest Hotel, Східниця!*\n\n"
-        "Ми поєднали затишок природи та сервіс преміум-класу.\n"
-        "Оберіть розділ меню нижче, щоб розпочати 👇"
+async def start_command(message: types.Message):
+    await message.answer(
+        "🌲 *Forrest Hotel — Східниця*\n\n"
+        "Відпочинок серед карпатського лісу\n\n"
+        "Оберіть розділ:",
+        reply_markup=get_main_menu(),
+        parse_mode=ParseMode.MARKDOWN
     )
-    await message.answer(welcome_text, reply_markup=main_kb)
 
-@dp.message(F.text == "🏨 Переглянути номери")
-async def show_rooms(message: types.Message):
-    await message.answer("✨ *Наші найкращі пропозиції:*", reply_markup=rooms_kb)
-
-@dp.callback_query(F.data == "r1")
-async def r1(cb: types.CallbackQuery):
-    caption = "🌲 *Comfort Suite*\n\nКласичний затишок. Вид на сосновий ліс, ортопедичне ліжко та власна тераса.\n\n💰 *Ціна:* 1200 грн/доба"
-    await cb.message.answer_photo(
-        photo="https://images.unsplash.com/photo-1505691938895-1758d7eaa511?q=80&w=1200",
-        caption=caption
+# ---------- НОМЕРИ ----------
+@dp.callback_query(F.data == "view_rooms")
+async def show_rooms(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "🏨 Оберіть номер:",
+        reply_markup=get_rooms_menu()
     )
-    await cb.answer()
+    await callback.answer()
 
-@dp.callback_query(F.data == "r2")
-async def r2(cb: types.CallbackQuery):
-    caption = "⛰ *Forest View*\n\nПанорамні вікна на гори. Сучасний дизайн та кавомашина у номері.\n\n💰 *Ціна:* 1800 грн/доба"
-    await cb.message.answer_photo(
-        photo="https://images.unsplash.com/photo-1590490359683-658d3d23f972?q=80&w=1200",
-        caption=caption
+@dp.callback_query(F.data == "room_lux")
+async def room_lux_info(callback: types.CallbackQuery):
+    await callback.message.answer_photo(
+        photo="https://images.unsplash.com/photo-1566073771259-6a8506099945",
+        caption="💎 *Люкс*\n\n"
+                "• Панорамний вид\n"
+                "• Сніданок включено\n"
+                "• Велике ліжко\n\n"
+                "💰 2500 грн/доба",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=get_rooms_menu()
     )
-    await cb.answer()
+    await callback.answer()
 
-@dp.callback_query(F.data == "r3")
-async def r3(cb: types.CallbackQuery):
-    caption = "👑 *Presidential Loft*\n\nНайкращий номер готелю. Власний камін, простора тераса та джакузі.\n\n💰 *Ціна:* 2600 грн/доба"
-    await cb.message.answer_photo(
-        photo="https://images.unsplash.com/photo-1591088398332-8a7791972843?q=80&w=1200",
-        caption=caption
+@dp.callback_query(F.data == "room_std")
+async def room_std_info(callback: types.CallbackQuery):
+    await callback.message.answer_photo(
+        photo="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+        caption="🛏 *Стандарт*\n\n"
+                "• Затишний номер\n"
+                "• Wi-Fi\n"
+                "• Душ\n\n"
+                "💰 900 грн/доба",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=get_rooms_menu()
     )
-    await cb.answer()
+    await callback.answer()
 
-@dp.message(F.text == "📅 Забронювати відпочинок")
-async def ask_contact(message: types.Message):
-    kb = ReplyKeyboardMarkup(keyboard=[
-        [KeyboardButton(text="📱 Надіслати номер", request_contact=True)],
-        [KeyboardButton(text="⬅️ Назад")]
-    ], resize_keyboard=True)
-    await message.answer("Для бронювання залиште ваш контакт. Адміністратор зателефонує протягом 5 хвилин:", reply_markup=kb)
-
-@dp.message(F.contact)
-async def get_contact(message: types.Message):
-    # Тут можна додати відправку заявки адміну в приватні повідомлення
-    await message.answer("✅ *Дякуємо! Заявку прийнято.*\nОчікуйте на дзвінок адміністратора ✨", reply_markup=main_kb)
-    print(f"НОВА ЗАЯВКА: {message.contact.full_name} | {message.contact.phone_number}")
-
-@dp.message(F.text == "📍 Локація")
-async def loc(message: types.Message):
-    await message.answer("📍 *Ми знаходимось тут:*")
-    await bot.send_location(message.chat.id, 49.2312, 23.3441)
-
-@dp.message(F.text == "📜 Прайс")
-async def price(message: types.Message):
-    price_list = (
-        "📜 *Наш прайс-лист:*\n\n"
-        "• Comfort Suite: 1200 грн\n"
-        "• Forest View: 1800 грн\n"
-        "• Presidential Loft: 2600 грн\n\n"
-        "_У вартість включено сніданок та СПА._"
+# ---------- ГАЛЕРЕЯ ----------
+@dp.callback_query(F.data == "gallery")
+async def gallery(callback: types.CallbackQuery):
+    await callback.message.answer_photo(
+        photo="https://images.unsplash.com/photo-1501117716987-c8e1ecb210e1",
+        caption="📷 Фото готелю"
     )
-    await message.answer(price_list)
+    await callback.answer()
 
-@dp.message(F.text == "⬅️ Назад")
-async def go_back(message: types.Message):
-    await cmd_start(message)
+# ---------- ЦІНИ ----------
+@dp.callback_query(F.data == "prices")
+async def prices(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "💰 *Ціни*\n\n"
+        "Стандарт — 900 грн\n"
+        "Люкс — 2500 грн",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=get_main_menu()
+    )
+    await callback.answer()
 
-# Запуск
+# ---------- КОНТАКТИ ----------
+@dp.callback_query(F.data == "contacts")
+async def contacts(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "📞 Контакти\n\n"
+        "📍 Східниця\n"
+        "📱 +380XXXXXXXXX\n\n"
+        "Напишіть нам у Telegram 👇",
+        reply_markup=get_main_menu()
+    )
+    await callback.answer()
+
+# ---------- БРОНЮВАННЯ ----------
+@dp.callback_query(F.data == "booking")
+async def booking(callback: types.CallbackQuery):
+    await callback.message.answer(
+        "📅 Напишіть:\n\n"
+        "• дату заїзду\n"
+        "• дату виїзду\n"
+        "• кількість гостей"
+    )
+    await callback.answer()
+
+# ---------- ПЕРЕСИЛКА АДМІНУ ----------
+@dp.message()
+async def forward_to_admin(message: types.Message):
+    await bot.send_message(
+        ADMIN_ID,
+        f"📩 Нова заявка:\n\n{message.text}"
+    )
+    await message.answer("✅ Дякуємо! Ми скоро з вами зв'яжемось.")
+
+# ---------- НАЗАД ----------
+@dp.callback_query(F.data == "main_menu")
+async def back_to_main(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "Головне меню:",
+        reply_markup=get_main_menu()
+    )
+    await callback.answer()
+
+# ---------- СТАРТ ----------
 async def main():
-    print("--- БОТ ЗАПУЩЕНИЙ У ХМАРІ ---")
-    try:
-        await dp.start_polling(bot)
-    finally:
-        await bot.session.close()
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+async def main():
+    try:
+        await dp.start_polling(bot)
+    except Exception as e:
+        print(e)
